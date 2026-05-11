@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HRU WMS – Test Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f4f0;--surface:#ffffff;--surface2:#f0efe9;
+  --border:#e2e0d8;--border2:#d0ceC4;
+  --text:#1a1917;--text2:#5a574f;--text3:#928f85;
+  --accent:#1a56db;--accent-bg:#eff4ff;
+  --pass:#0f7044;--pass-bg:#ecfdf3;--pass-border:#6ee7b7;
+  --fail:#b91c1c;--fail-bg:#fef2f2;--fail-border:#fca5a5;
+  --warn:#b45309;--warn-bg:#fffbeb;--warn-border:#fcd34d;
+  --tested:#1d4ed8;--tested-bg:#eff6ff;--tested-border:#bfdbfe;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --r:8px;--r2:12px;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+/* NAV */
+nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:0;position:sticky;top:0;z-index:100}
+.nav-logo{font-size:16px;font-weight:600;padding:16px 0;margin-right:32px;letter-spacing:-0.3px}
+.nav-logo span{color:var(--accent)}
+.nav-tabs{display:flex;gap:0}
+.nav-tab{padding:18px 20px;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--text2);transition:all .15s;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:var(--font)}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.nav-tab:hover:not(.active){color:var(--text);background:var(--surface2)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.export-btn{padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font)}
+.export-btn:hover{background:#1746c0}
+
+/* PAGES */
+.page{display:none;padding:24px;max-width:1400px;margin:0 auto}
+.page.active{display:block}
+
+/* MASTER PAGE */
+.summary-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+.s-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px}
+.s-card .label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.s-card .value{font-size:24px;font-weight:600;line-height:1}
+.s-card .sub{font-size:11px;color:var(--text3);margin-top:4px}
+.s-card.pass .value{color:var(--pass)}
+.s-card.fail .value{color:var(--fail)}
+.s-card.warn .value{color:var(--warn)}
+.s-card.info .value{color:var(--accent)}
+
+.progress-bar{background:var(--border);border-radius:999px;height:8px;overflow:hidden;margin-bottom:24px}
+.progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--pass),#34d399);transition:width .5s ease}
+
+/* DEPT ACCORDION */
+.dept-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:16px;overflow:hidden}
+.dept-header{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;transition:background .1s}
+.dept-header:hover{background:var(--surface2)}
+.dept-icon{width:32px;height:32px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.dept-name{font-size:14px;font-weight:600;flex:1}
+.dept-stats{display:flex;gap:8px;align-items:center}
+.dept-badge{font-size:11px;font-weight:500;padding:3px 8px;border-radius:999px}
+.badge-pass{background:var(--pass-bg);color:var(--pass);border:1px solid var(--pass-border)}
+.badge-fail{background:var(--fail-bg);color:var(--fail);border:1px solid var(--fail-border)}
+.badge-pend{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
+.badge-tested{background:var(--tested-bg);color:var(--tested);border:1px solid var(--tested-border)}
+.dept-chevron{color:var(--text3);font-size:14px;transition:transform .2s}
+.dept-chevron.open{transform:rotate(180deg)}
+.dept-body{display:none;border-top:1px solid var(--border)}
+.dept-body.open{display:block}
+
+/* MASTER TABLE */
+.master-table{width:100%;border-collapse:collapse;font-size:13px}
+.master-table th{background:var(--surface2);padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
+.master-table td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.master-table tr:last-child td{border-bottom:none}
+.master-table tr:hover td{background:var(--surface2)}
+.flow-tag{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:500;background:var(--accent-bg);color:var(--accent);border:1px solid #bfdbfe}
+.status-pill{font-size:11px;padding:3px 10px;border-radius:999px;font-weight:500}
+.pill-pass{background:var(--pass-bg);color:var(--pass)}
+.pill-fail{background:var(--fail-bg);color:var(--fail)}
+.pill-pend{background:var(--surface2);color:var(--text3)}
+.pill-tested{background:var(--tested-bg);color:var(--tested)}
+.remarks-cell{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)}
+.view-btn{font-size:11px;padding:4px 10px;border:1px solid var(--border2);border-radius:var(--r);cursor:pointer;background:var(--surface);color:var(--text2);font-family:var(--font);white-space:nowrap}
+.view-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ts-cell{font-family:var(--mono);font-size:11px;color:var(--text3);white-space:nowrap}
+
+/* DETAIL PAGE */
+.detail-header{margin-bottom:20px}
+.detail-header h2{font-size:20px;font-weight:600;margin-bottom:4px}
+.detail-header p{color:var(--text2);font-size:13px}
+
+.filter-bar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.filter-select{padding:7px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);font-size:13px;color:var(--text);font-family:var(--font);cursor:pointer}
+.search-input{padding:7px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);font-size:13px;color:var(--text);font-family:var(--font);flex:1;min-width:200px}
+.search-input:focus,.filter-select:focus{outline:none;border-color:var(--accent)}
+
+/* CASE CARDS */
+.cases-grid{display:flex;flex-direction:column;gap:12px}
+.case-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
+.case-card.pass-card{border-left:3px solid var(--pass)}
+.case-card.fail-card{border-left:3px solid var(--fail)}
+.case-card.tested-card{border-left:3px solid var(--tested)}
+.case-card.pend-card{border-left:3px solid var(--border2)}
+.case-header{display:flex;align-items:flex-start;gap:12px;padding:14px 16px}
+.case-num{font-family:var(--mono);font-size:11px;color:var(--text3);padding:3px 8px;background:var(--surface2);border-radius:var(--r);white-space:nowrap;margin-top:1px}
+.case-info{flex:1}
+.case-title{font-size:13px;font-weight:600;margin-bottom:3px}
+.case-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dept-chip{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.flow-chip{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--accent-bg);color:var(--accent);border:1px solid #bfdbfe}
+.case-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.action-btn{padding:6px 14px;border-radius:var(--r);font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--surface);font-family:var(--font);transition:all .15s}
+.action-btn:hover{border-color:var(--border);background:var(--surface2)}
+.btn-tested{border-color:var(--tested-border);color:var(--tested);background:var(--tested-bg)}
+.btn-tested:hover{background:#dbeafe;border-color:#93c5fd}
+.btn-pass{border-color:var(--pass-border);color:var(--pass);background:var(--pass-bg)}
+.btn-pass:hover{background:#d1fae5;border-color:#6ee7b7}
+.btn-fail{border-color:var(--fail-border);color:var(--fail);background:var(--fail-bg)}
+.btn-fail:hover{background:#fee2e2;border-color:#fca5a5}
+.btn-active-tested{background:var(--tested);color:#fff;border-color:var(--tested)}
+.btn-active-pass{background:var(--pass);color:#fff;border-color:var(--pass)}
+.btn-active-fail{background:var(--fail);color:#fff;border-color:var(--fail)}
+
+.case-body{padding:0 16px 14px}
+.case-timestamps{display:flex;gap:20px;margin-bottom:10px;flex-wrap:wrap}
+.ts-item{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.ts-item span{color:var(--text2);font-weight:500}
+.remarks-row{display:flex;gap:8px;align-items:flex-start}
+.remarks-input{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-family:var(--font);color:var(--text);resize:vertical;min-height:36px;max-height:120px;background:var(--surface)}
+.remarks-input:focus{outline:none;border-color:var(--accent)}
+.save-btn{padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);white-space:nowrap;flex-shrink:0}
+.save-btn:hover{background:#1746c0}
+.saved-indicator{font-size:11px;color:var(--pass);opacity:0;transition:opacity .3s;margin-top:4px}
+.saved-indicator.show{opacity:1}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty-state .icon{font-size:36px;margin-bottom:12px}
+.empty-state p{font-size:14px}
+
+/* RESPONSIVE */
+@media(max-width:700px){
+  .case-header{flex-wrap:wrap}
+  .case-actions{width:100%}
+  nav{padding:0 12px}
+  .dept-stats{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">HRU <span>WMS</span> Test Tracker</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('master')">📊 Master View</button>
+    <button class="nav-tab" onclick="showPage('detail')">🧪 Test Cases</button>
+  </div>
+  <div class="nav-right">
+    <button class="export-btn" onclick="exportReport()">⬇ Export Report</button>
+  </div>
+</nav>
+
+<!-- MASTER PAGE -->
+<div class="page active" id="page-master">
+  <div class="summary-bar" id="summary-bar"></div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  <div id="dept-list"></div>
+</div>
+
+<!-- DETAIL PAGE -->
+<div class="page" id="page-detail">
+  <div class="detail-header">
+    <h2>Test Case Management</h2>
+    <p>Click Tested / Pass / Fail on each case. Remarks auto-save with timestamp.</p>
+  </div>
+  <div class="filter-bar">
+    <input class="search-input" type="text" placeholder="Search test cases…" oninput="filterCases()" id="search-box"/>
+    <select class="filter-select" onchange="filterCases()" id="filter-dept">
+      <option value="">All Departments</option>
+    </select>
+    <select class="filter-select" onchange="filterCases()" id="filter-status">
+      <option value="">All Status</option>
+      <option value="pending">Pending</option>
+      <option value="tested">Tested</option>
+      <option value="pass">Pass</option>
+      <option value="fail">Fail</option>
+    </select>
+  </div>
+  <div class="cases-grid" id="cases-grid"></div>
+</div>
+
+<script>
+const DEPTS = {
+  "Masters": {icon:"🗂", color:"#3b82f6"},
+  "Inbound": {icon:"📦", color:"#8b5cf6"},
+  "Returns": {icon:"↩", color:"#f59e0b"},
+  "Putaway": {icon:"📍", color:"#10b981"},
+  "Outbound": {icon:"🚚", color:"#ef4444"},
+  "Inventory": {icon:"🔍", color:"#06b6d4"},
+  "Reports": {icon:"📊", color:"#6366f1"},
+};
+
+const CASES_RAW = [
+  // MASTERS
+  {id:"M-01",dept:"Masters",flow:"Owner Setup",title:"Owner 'HRU' configured and mapped to warehouse schema"},
+  {id:"M-02",dept:"Masters",flow:"Item Master",title:"Parent Item created via D365 API integration"},
+  {id:"M-03",dept:"Masters",flow:"Item Master",title:"Child/Component SKU created manually via Excel upload"},
+  {id:"M-04",dept:"Masters",flow:"Item Master",title:"BOM structure with Parent-Child ratio maintained correctly"},
+  {id:"M-05",dept:"Masters",flow:"Item Master",title:"Item attributes (Weight, Height, Length, Category, Brand) synced from D365"},
+  {id:"M-06",dept:"Masters",flow:"Pack Key",title:"Pack Key assigned to item and warehouse activity performed at EA level"},
+  {id:"M-07",dept:"Masters",flow:"Location Master",title:"60,000+ locations configured for B2B and B2C areas"},
+  {id:"M-08",dept:"Masters",flow:"Location Master",title:"Marshalling, Rack, and VNA areas set up correctly"},
+  {id:"M-09",dept:"Masters",flow:"Location Master",title:"Stage, Dock, Hold, Excess/Short, and QC area locations created"},
+  {id:"M-10",dept:"Masters",flow:"BOM",title:"Component count validation matches ERP-defined count"},
+  {id:"M-11",dept:"Masters",flow:"BOM",title:"ISBOM flag validation — upload only allowed when flag = Y"},
+  // INBOUND
+  {id:"IB-01",dept:"Inbound",flow:"Imports / Local PO",title:"Purchase Order created in D365 and interfaced to WMS"},
+  {id:"IB-02",dept:"Inbound",flow:"Imports / Local PO",title:"PO editable before ASN creation; matches customs invoice"},
+  {id:"IB-03",dept:"Inbound",flow:"Imports / Local PO",title:"ASN generated from D365 and received by WMS"},
+  {id:"IB-04",dept:"Inbound",flow:"Imports / Local PO",title:"Receiving with BOM exploded to component SKU when BOM flag = Y"},
+  {id:"IB-05",dept:"Inbound",flow:"Imports / Local PO",title:"Over-receipt beyond ASN qty allowed (system does not block)"},
+  {id:"IB-06",dept:"Inbound",flow:"Imports / Local PO",title:"Discrepancies (short / excess / damage) logged in system"},
+  {id:"IB-07",dept:"Inbound",flow:"Imports / Local PO",title:"ASN Close sends receipt confirmation back to D365"},
+  {id:"IB-08",dept:"Inbound",flow:"Forward Sales",title:"SO from D365 linked to PO/ASN for cross-dock scenario"},
+  {id:"IB-09",dept:"Inbound",flow:"Forward Sales",title:"Manual removal of PO-SO link when short-received, reallocated from existing stock"},
+  {id:"IB-10",dept:"Inbound",flow:"Forward Sales",title:"Allocation priority by SO creation date (FIFO)"},
+  {id:"IB-11",dept:"Inbound",flow:"Buddy Store",title:"Transfer Order from Store 2 creates inbound ASN in WMS"},
+  {id:"IB-12",dept:"Inbound",flow:"Buddy Store",title:"RF-based receiving: ASN scan, barcode, qty, location captured"},
+  {id:"IB-13",dept:"Inbound",flow:"Buddy Store",title:"ASN manual close and GRN confirmed in D365"},
+  {id:"IB-14",dept:"Inbound",flow:"Sales Order Transfer",title:"Store-to-WH transfer: ASN created, inventory received, GRN confirmed"},
+  {id:"IB-15",dept:"Inbound",flow:"Store to Store",title:"ASN received; inventory dispatched to Store 2 via Transfer Order"},
+  {id:"IB-16",dept:"Inbound",flow:"Store to Store",title:"ASN confirmation NOT sent to ERP for store-to-store transfer"},
+  {id:"IB-17",dept:"Inbound",flow:"Pre-Distribution PO",title:"ASN received; Transfer Orders created in D365 only after WMS inventory confirmation"},
+  {id:"IB-18",dept:"Inbound",flow:"Direct Store Delivery",title:"Virtual ASN receipt via WMS UI (no RF scan, no putaway)"},
+  {id:"IB-19",dept:"Inbound",flow:"Direct Store Delivery",title:"Virtual shipment completed; D365 and WMS records updated"},
+  // RETURNS
+  {id:"RT-01",dept:"Returns",flow:"Customer Repair",title:"Returned LPN unloaded from WMS Load ID before shipment confirmation"},
+  {id:"RT-02",dept:"Returns",flow:"Customer Repair",title:"Manual ASN type 'Returnable' created via Excel upload in WMS"},
+  {id:"RT-03",dept:"Returns",flow:"Customer Repair",title:"WMS auto-creates Outbound Order against Returnable ASN"},
+  {id:"RT-04",dept:"Returns",flow:"Customer Repair",title:"Return post-shipment initiated from D365; ASN Close updates D365"},
+  {id:"RT-05",dept:"Returns",flow:"Store Repair",title:"Damaged item received at WH and moved to Joinery location"},
+  {id:"RT-06",dept:"Returns",flow:"Store Repair",title:"Manual ASN created for component SKU repair tracking"},
+  {id:"RT-07",dept:"Returns",flow:"Accessories Damage",title:"Transfer document from D365 creates Return ASN in WMS"},
+  {id:"RT-08",dept:"Returns",flow:"Accessories Damage",title:"Damaged inventory written off; adjustment entry sent to ERP"},
+  {id:"RT-09",dept:"Returns",flow:"Purchase Returns (RTV)",title:"RTV document from D365 creates ASN; items picked and staged"},
+  {id:"RT-10",dept:"Returns",flow:"Purchase Returns (RTV)",title:"RTV items kept on HOLD until physically shipped"},
+  {id:"RT-11",dept:"Returns",flow:"Purchase Returns (RTV)",title:"Replacement by supplier: manual Outbound type 'Returnable RTV' created"},
+  {id:"RT-12",dept:"Returns",flow:"Ecom Returns",title:"Ecom COD return: ASN from D365, RF receiving, inventory disposition"},
+  {id:"RT-13",dept:"Returns",flow:"Ecom Returns",title:"Ecom Normal return: condition-based routing to saleable or damage zone"},
+  {id:"RT-14",dept:"Returns",flow:"Ecom Returns",title:"Click N Collect return: uncollected order ASN received and GRN confirmed"},
+  // PUTAWAY
+  {id:"PA-01",dept:"Putaway",flow:"Assisted Putaway",title:"System suggests location based on Zone and Item strategy"},
+  {id:"PA-02",dept:"Putaway",flow:"Assisted Putaway",title:"System suggests qty based on Weight and CBM of item and location"},
+  {id:"PA-03",dept:"Putaway",flow:"Assisted Putaway",title:"User can override suggested location by scanning alternate location"},
+  {id:"PA-04",dept:"Putaway",flow:"Assisted Putaway",title:"Ground-floor direct putaway confirmed with qty and location"},
+  {id:"PA-05",dept:"Putaway",flow:"Assisted Putaway",title:"Reach truck staging for upper-floor putaway works correctly"},
+  {id:"PA-06",dept:"Putaway",flow:"Silent Night",title:"Standard Mattress SKU mapped to sellable WMS item"},
+  {id:"PA-07",dept:"Putaway",flow:"Silent Night",title:"Customized Mattress: single WMS SKU with customization flag from ERP"},
+  {id:"PA-08",dept:"Putaway",flow:"Silent Night",title:"Cancellation before WH receipt: PO/ASN/SO cancelled in ERP flows to WMS"},
+  {id:"PA-09",dept:"Putaway",flow:"Silent Night",title:"Post-receipt cancellation: Standard mattress returned to available stock"},
+  {id:"PA-10",dept:"Putaway",flow:"Silent Night",title:"Post-receipt cancellation: Customized mattress triggers RTV back to vendor"},
+  // OUTBOUND
+  {id:"OB-01",dept:"Outbound",flow:"Customer Sales",title:"SO from D365 split into one line item per order and auto-allocated"},
+  {id:"OB-02",dept:"Outbound",flow:"Customer Sales",title:"Wave released based on delivery date; load generation notification sent to D365"},
+  {id:"OB-03",dept:"Outbound",flow:"Customer Sales",title:"Shipment confirmation sent to D365 and inventory reduced in WMS"},
+  {id:"OB-04",dept:"Outbound",flow:"Customer Pickup",title:"Pickup order staged in pickup area; customer handover recorded"},
+  {id:"OB-05",dept:"Outbound",flow:"Stores Delivery",title:"Transfer Order received; manual allocation (no auto-allocation)"},
+  {id:"OB-06",dept:"Outbound",flow:"Exports Sales",title:"Export order fulfilled with commercial invoice and packing list"},
+  {id:"OB-07",dept:"Outbound",flow:"Oman Exports",title:"Oman export order shipped without palletization and reservation"},
+  {id:"OB-08",dept:"Outbound",flow:"Ecom 3PL",title:"Magento order received in ERP, synced to WMS, auto-allocated, wave released"},
+  {id:"OB-09",dept:"Outbound",flow:"Ecom Click & Collect",title:"Click & Collect wave manually released; shipment confirmation flows back to WMS"},
+  {id:"OB-10",dept:"Outbound",flow:"Ecom Mixed Inhouse",title:"Mixed large-item ecom order processed like Customer Sales"},
+  {id:"OB-11",dept:"Outbound",flow:"Vendor Return",title:"RTV order allocated manually; shipped via WMS UI; interface update to ERP"},
+  {id:"OB-12",dept:"Outbound",flow:"Silent Night Vendor Delivery",title:"Virtual receipt and virtual shipment completed; records updated in both systems"},
+  {id:"OB-13",dept:"Outbound",flow:"Vendor Replacement",title:"Manual RTV created; auto-ASN generated in Pending status for incoming replacement"},
+  {id:"OB-14",dept:"Outbound",flow:"Returnable Delivery",title:"Returnable TO shipped; WMS auto-creates return ASN for goods return"},
+  {id:"OB-15",dept:"Outbound",flow:"Write-off",title:"Non-repairable inventory in designated location; TO approved and shipped manually"},
+  {id:"OB-16",dept:"Outbound",flow:"Order Cancellation",title:"Cancellation in Allocated/Released/Created status: auto-unallocated and cancelled"},
+  {id:"OB-17",dept:"Outbound",flow:"Order Cancellation",title:"Cancellation in Picked/Loaded status: manual unpick, unload, return to rack"},
+  {id:"OB-18",dept:"Outbound",flow:"Task Reasons",title:"SKIP task reason allows user to defer current RF task"},
+  {id:"OB-19",dept:"Outbound",flow:"Task Reasons",title:"SHORT allocation reallocates stock from alternate location"},
+  {id:"OB-20",dept:"Outbound",flow:"Bean Bag Refill",title:"Bean bag outbound and inbound use different SKUs with correct WMS linkage"},
+  // INVENTORY
+  {id:"IV-01",dept:"Inventory",flow:"Inventory Hold",title:"LPN-level hold restricts allocation/picking/shipping"},
+  {id:"IV-02",dept:"Inventory",flow:"Inventory Hold",title:"Location-level hold covers all inventory in that location"},
+  {id:"IV-03",dept:"Inventory",flow:"Inventory Hold",title:"All 13 hold reasons configured: Damage, QC Hold, Missing Part, etc."},
+  {id:"IV-04",dept:"Inventory",flow:"Inventory Move",title:"WEB UI Inventory Move: search, select, execute move works correctly"},
+  {id:"IV-05",dept:"Inventory",flow:"Inventory Move",title:"RF Standard Move: partial LPN movement to new location/LPN confirmed"},
+  {id:"IV-06",dept:"Inventory",flow:"Cycle Count",title:"CC Task: release, execute via RF, variance recorded and reviewed"},
+  {id:"IV-07",dept:"Inventory",flow:"Cycle Count",title:"New Physical Count: control number generated, build count, RF execution, variance posting"},
+  {id:"IV-08",dept:"Inventory",flow:"Inventory Adjustment",title:"Adjustment with reason code corrects physical vs. system discrepancy"},
+  {id:"IV-09",dept:"Inventory",flow:"Inventory Adjustment",title:"Adjustment triggers D365 interface to update stock records"},
+  // REPORTS
+  {id:"RP-01",dept:"Reports",flow:"Inbound Reports",title:"Inward Summary report shows all ASN details with GRN and status"},
+  {id:"RP-02",dept:"Reports",flow:"Inbound Reports",title:"Inward Detail report shows line-level ASN breakdown"},
+  {id:"RP-03",dept:"Reports",flow:"Inbound Reports",title:"Putaway Pending report shows received but not putaway stock"},
+  {id:"RP-04",dept:"Reports",flow:"Inbound Reports",title:"Putaway Transaction report shows locations and timestamps"},
+  {id:"RP-05",dept:"Reports",flow:"Outbound Reports",title:"Order Status report shows qty at each stage (ordered, allocated, picked, shipped)"},
+  {id:"RP-06",dept:"Reports",flow:"Outbound Reports",title:"Picking Pending report shows items awaiting picking"},
+  {id:"RP-07",dept:"Reports",flow:"Outbound Reports",title:"Drop ID/Box ID Status report shows real-time tracking"},
+  {id:"RP-08",dept:"Reports",flow:"Inventory Reports",title:"Available Inventory Summary: qty, allocated, picked, available"},
+  {id:"RP-09",dept:"Reports",flow:"Inventory Reports",title:"Available Inventory Detail: location, LPN-level breakdown"},
+  {id:"RP-10",dept:"Reports",flow:"Dashboards",title:"Inbound dashboard KPIs: weight, volume, qty, ASN count/status"},
+  {id:"RP-11",dept:"Reports",flow:"Dashboards",title:"Outbound dashboard KPIs: shipped orders, weight, volume"},
+  {id:"RP-12",dept:"Reports",flow:"Dashboards",title:"Inventory dashboard KPIs: adjustments, cycle count accuracy, on-hold"},
+];
+
+// State per case
+let STATE = {};
+function loadState(){
+  try{const s=localStorage.getItem('hru_wms_state');if(s)STATE=JSON.parse(s);}catch(e){}
+  CASES_RAW.forEach(c=>{if(!STATE[c.id])STATE[c.id]={status:'pending',remarks:'',testedAt:'',resultAt:'',remarksAt:''};});
+}
+function saveState(){try{localStorage.setItem('hru_wms_state',JSON.stringify(STATE));}catch(e){}}
+
+function ts(){const n=new Date();return n.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' '+n.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+
+function getStats(){
+  const total=CASES_RAW.length;
+  let pass=0,fail=0,tested=0,pending=0;
+  CASES_RAW.forEach(c=>{
+    const s=STATE[c.id].status;
+    if(s==='pass')pass++;
+    else if(s==='fail')fail++;
+    else if(s==='tested')tested++;
+    else pending++;
+  });
+  return{total,pass,fail,tested,pending};
+}
+
+function deptStats(dept){
+  const cases=CASES_RAW.filter(c=>c.dept===dept);
+  let pass=0,fail=0,tested=0,pending=0;
+  cases.forEach(c=>{
+    const s=STATE[c.id].status;
+    if(s==='pass')pass++;else if(s==='fail')fail++;else if(s==='tested')tested++;else pending++;
+  });
+  return{total:cases.length,pass,fail,tested,pending};
+}
+
+function showPage(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.nav-tab')[p==='master'?0:1].classList.add('active');
+  if(p==='master')renderMaster();
+  else renderDetail();
+}
+
+function renderMaster(){
+  const{total,pass,fail,tested,pending}=getStats();
+  const done=pass+fail+tested;
+  const pct=Math.round(done/total*100);
+
+  document.getElementById('summary-bar').innerHTML=`
+    <div class="s-card"><div class="label">Total Cases</div><div class="value">${total}</div><div class="sub">All test scenarios</div></div>
+    <div class="s-card pass"><div class="label">✅ Pass</div><div class="value">${pass}</div><div class="sub">${Math.round(pass/total*100)}% of total</div></div>
+    <div class="s-card fail"><div class="label">❌ Fail</div><div class="value">${fail}</div><div class="sub">${Math.round(fail/total*100)}% of total</div></div>
+    <div class="s-card info"><div class="label">🔵 Tested</div><div class="value">${tested}</div><div class="sub">Awaiting result</div></div>
+    <div class="s-card warn"><div class="label">⏳ Pending</div><div class="value">${pending}</div><div class="sub">Not yet tested</div></div>
+    <div class="s-card"><div class="label">Progress</div><div class="value">${pct}%</div><div class="sub">${done} of ${total} done</div></div>
+  `;
+  document.getElementById('progress-fill').style.width=pct+'%';
+
+  const depts=Object.keys(DEPTS);
+  let html='';
+  depts.forEach(dept=>{
+    const{total:t,pass:p,fail:f,tested:te,pending:pe}=deptStats(dept);
+    const deptCases=CASES_RAW.filter(c=>c.dept===dept);
+    const d=DEPTS[dept];
+    html+=`
+    <div class="dept-section">
+      <div class="dept-header" onclick="toggleDept('dept-${dept.replace(/\s/g,'_')}')">
+        <div class="dept-icon" style="background:${d.color}22;font-size:18px">${d.icon}</div>
+        <div class="dept-name">${dept}</div>
+        <div class="dept-stats">
+          ${p?`<span class="dept-badge badge-pass">✓ ${p} Pass</span>`:''}
+          ${f?`<span class="dept-badge badge-fail">✗ ${f} Fail</span>`:''}
+          ${te?`<span class="dept-badge badge-tested">● ${te} Tested</span>`:''}
+          ${pe?`<span class="dept-badge badge-pend">○ ${pe} Pending</span>`:''}
+          <span style="font-size:11px;color:var(--text3);margin-left:4px">${t} cases</span>
+        </div>
+        <span class="dept-chevron" id="chev-dept-${dept.replace(/\s/g,'_')}">▾</span>
+      </div>
+      <div class="dept-body" id="dept-${dept.replace(/\s/g,'_')}">
+        <table class="master-table">
+          <thead><tr>
+            <th style="width:70px">ID</th>
+            <th>Test Case</th>
+            <th style="width:130px">Flow</th>
+            <th style="width:80px">Status</th>
+            <th style="width:180px">Remarks</th>
+            <th style="width:130px">Tested At</th>
+            <th style="width:130px">Result At</th>
+            <th style="width:70px"></th>
+          </tr></thead>
+          <tbody>
+          ${deptCases.map(c=>{
+            const st=STATE[c.id];
+            const pillClass=st.status==='pass'?'pill-pass':st.status==='fail'?'pill-fail':st.status==='tested'?'pill-tested':'pill-pend';
+            const pillLabel=st.status==='pass'?'✓ Pass':st.status==='fail'?'✗ Fail':st.status==='tested'?'● Tested':'○ Pending';
+            return`<tr>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--text3)">${c.id}</td>
+              <td style="font-size:13px">${c.title}</td>
+              <td><span class="flow-tag">${c.flow}</span></td>
+              <td><span class="status-pill ${pillClass}">${pillLabel}</span></td>
+              <td class="remarks-cell" title="${(st.remarks||'').replace(/"/g,'&quot;')}">${st.remarks||'<span style="color:var(--text3);font-style:italic">—</span>'}</td>
+              <td class="ts-cell">${st.testedAt||'—'}</td>
+              <td class="ts-cell">${st.resultAt||'—'}</td>
+              <td><button class="view-btn" onclick="goToCase('${c.id}')">Edit →</button></td>
+            </tr>`;
+          }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  });
+  document.getElementById('dept-list').innerHTML=html;
+}
+
+function toggleDept(id){
+  const body=document.getElementById(id);
+  const chev=document.getElementById('chev-'+id);
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+function goToCase(id){
+  showPage('detail');
+  document.getElementById('search-box').value=id;
+  filterCases();
+  setTimeout(()=>{
+    const el=document.getElementById('card-'+id);
+    if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
+  },100);
+}
+
+function renderDetail(){
+  const deptSel=document.getElementById('filter-dept');
+  if(deptSel.options.length<=1){
+    Object.keys(DEPTS).forEach(d=>{
+      const o=document.createElement('option');o.value=d;o.textContent=d;deptSel.appendChild(o);
+    });
+  }
+  filterCases();
+}
+
+function filterCases(){
+  const q=(document.getElementById('search-box').value||'').toLowerCase();
+  const deptF=document.getElementById('filter-dept').value;
+  const statF=document.getElementById('filter-status').value;
+  const filtered=CASES_RAW.filter(c=>{
+    const matchQ=!q||(c.id.toLowerCase().includes(q)||c.title.toLowerCase().includes(q)||c.flow.toLowerCase().includes(q)||c.dept.toLowerCase().includes(q));
+    const matchD=!deptF||c.dept===deptF;
+    const matchS=!statF||STATE[c.id].status===statF;
+    return matchQ&&matchD&&matchS;
+  });
+  const grid=document.getElementById('cases-grid');
+  if(!filtered.length){grid.innerHTML=`<div class="empty-state"><div class="icon">🔍</div><p>No test cases match your filters.</p></div>`;return;}
+  grid.innerHTML=filtered.map(c=>buildCaseCard(c)).join('');
+}
+
+function buildCaseCard(c){
+  const st=STATE[c.id];
+  const cardClass=st.status==='pass'?'pass-card':st.status==='fail'?'fail-card':st.status==='tested'?'tested-card':'pend-card';
+  const tBtn=st.status==='tested'?'btn-active-tested':'btn-tested';
+  const pBtn=st.status==='pass'?'btn-active-pass':'btn-pass';
+  const fBtn=st.status==='fail'?'btn-active-fail':'btn-fail';
+  const remarksEsc=(st.remarks||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  return`
+  <div class="case-card ${cardClass}" id="card-${c.id}">
+    <div class="case-header">
+      <div class="case-num">${c.id}</div>
+      <div class="case-info">
+        <div class="case-title">${c.title}</div>
+        <div class="case-meta">
+          <span class="dept-chip">${DEPTS[c.dept].icon} ${c.dept}</span>
+          <span class="flow-chip">${c.flow}</span>
+        </div>
+      </div>
+      <div class="case-actions">
+        <button class="action-btn ${tBtn}" onclick="setStatus('${c.id}','tested')">● Tested</button>
+        <button class="action-btn ${pBtn}" onclick="setStatus('${c.id}','pass')">✓ Pass</button>
+        <button class="action-btn ${fBtn}" onclick="setStatus('${c.id}','fail')">✗ Fail</button>
+      </div>
+    </div>
+    <div class="case-body">
+      <div class="case-timestamps">
+        ${st.testedAt?`<div class="ts-item">🔵 Tested: <span>${st.testedAt}</span></div>`:''}
+        ${st.resultAt?`<div class="ts-item">${st.status==='pass'?'✅':'❌'} Result: <span>${st.resultAt}</span></div>`:''}
+        ${st.remarksAt?`<div class="ts-item">💬 Remark: <span>${st.remarksAt}</span></div>`:''}
+      </div>
+      <div class="remarks-row">
+        <textarea class="remarks-input" id="rmk-${c.id}" placeholder="Add remarks…" rows="1">${remarksEsc}</textarea>
+        <button class="save-btn" onclick="saveRemarks('${c.id}')">Save</button>
+      </div>
+      <div class="saved-indicator" id="saved-${c.id}">✓ Saved</div>
+    </div>
+  </div>`;
+}
+
+function setStatus(id,status){
+  const prev=STATE[id].status;
+  if(status==='tested'){
+    STATE[id].status='tested';
+    STATE[id].testedAt=ts();
+    if(prev==='pass'||prev==='fail'){STATE[id].resultAt='';}
+  } else {
+    if(prev!=='tested'&&prev!=='pass'&&prev!=='fail'){STATE[id].testedAt=ts();}
+    STATE[id].status=status;
+    STATE[id].resultAt=ts();
+  }
+  saveState();
+  // Re-render this card in place
+  const card=document.getElementById('card-'+id);
+  if(card){
+    const c=CASES_RAW.find(x=>x.id===id);
+    card.outerHTML=buildCaseCard(c);
+  }
+}
+
+function saveRemarks(id){
+  const val=document.getElementById('rmk-'+id).value;
+  STATE[id].remarks=val;
+  STATE[id].remarksAt=ts();
+  saveState();
+  const ind=document.getElementById('saved-'+id);
+  if(ind){ind.classList.add('show');setTimeout(()=>ind.classList.remove('show'),2000);}
+  // Update master if open
+  if(document.getElementById('page-master').classList.contains('active'))renderMaster();
+}
+
+function exportReport(){
+  const{total,pass,fail,tested,pending}=getStats();
+  const pct=Math.round((pass+fail+tested)/total*100);
+  let csv='ID,Department,Flow,Title,Status,Tested At,Result At,Remarks,Remarks At\n';
+  CASES_RAW.forEach(c=>{
+    const st=STATE[c.id];
+    const esc=s=>`"${(s||'').replace(/"/g,'""')}"`;
+    csv+=`${c.id},${esc(c.dept)},${esc(c.flow)},${esc(c.title)},${st.status},${esc(st.testedAt)},${esc(st.resultAt)},${esc(st.remarks)},${esc(st.remarksAt)}\n`;
+  });
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`HRU_WMS_Test_Report_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// INIT
+loadState();
+renderMaster();
+</script>
+</body>
+</html>
